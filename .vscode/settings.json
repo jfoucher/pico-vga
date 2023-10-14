@@ -2,6 +2,7 @@
         "files.associations": {
                 "*.c": "c",
                 "clocks.h": "c",
-                "dma.h": "c"
+                "dma.h": "c",
+                "stdlib.h": "c"
         }
 }

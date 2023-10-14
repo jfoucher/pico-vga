@@ -1,17 +1,47 @@
+.define CS_PIN   12
+.define PHI2_PIN 13
 
 .program input
 
 .wrap_target
-        wait 1 pin 0
-waitloop:
-        in pins, 16 [32]
-        ;mov isr, pins
-        ; go back to waitloop if pin 5 is still high
-        jmp pin waitloop
-        ; if we get here, it means pin 5 became low
-        push noblock
-        ; in null, 32
-.wrap
+idle:
+    wait 1 pin CS_PIN       ; wait for CS to go high
+    wait 0 pin CS_PIN       ; wait for CS to go low
+                            ; TODO deglitch CS and add a bit of delay
+    jmp pin, read_cycle     ; if RW is high, its a read cycle
+
+write_cycle:
+    in pins, 16             ; take a sample when the control signals are stable
+    wait 1 pin PHI2_PIN     ; wait for PHI2 pin to go high
+    ;
+    wait 0 pin PHI2_PIN     ; wait for PHI2 pin to go low
+    in pins, 16             ; sample the write data just after the falling edge
+                            ; auto-push now used
+
+read_cycle:
+        jmp idle
+.wrap                       ; and back to idle again
+
+; .wrap_target
+;         ; wait for SSEL to be low
+;         wait 0 pin 12
+;         ; then wait for clock to be high
+;         wait 1 pin 13 [31]
+; waitloop:
+;         wait 0 pin 13
+;         ; input data
+;         in pins, 16
+;         ;mov isr, pins
+;         ; go back to waitloop if clock is still high
+;         ;jmp pin waitloop
+        
+; willpush:
+;         ;wait 0 pin 12
+;         ;in pins, 16
+;         ; if we get here, it means pin 5 became low
+;         push noblock
+;         ; in null, 32
+; .wrap
 
 % c-sdk {
 static inline uint bits_packed_per_word(uint pin_count) {
@@ -24,12 +54,14 @@ static inline uint bits_packed_per_word(uint pin_count) {
 }
 void input_program_init(PIO pio, uint sm, uint offset, uint pin) {
         pio_gpio_init(pio, pin);
-        pio_sm_set_consecutive_pindirs(pio, sm, pin, 32, false);
+        pio_sm_set_consecutive_pindirs(pio, sm, pin, 16, false);
+        pio_sm_set_consecutive_pindirs(pio, sm, 27, 1, false);
         pio_sm_config c = input_program_get_default_config(offset);
-        sm_config_set_in_pins(&c, pin);
+        // sm_config_set_in_pins(&c, 27);
         // sm_config_set_out_pins(&c, pin, 14);
-        sm_config_set_jmp_pin(&c, 5);
-        sm_config_set_in_shift(&c, false, false, 16);
+        sm_config_set_jmp_pin(&c, 27);
+        sm_config_set_in_shift(&c, true, true, 32);
+        // sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_RX);
 
         pio_sm_init(pio, sm, offset, &c);
 }

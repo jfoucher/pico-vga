@@ -26,7 +26,7 @@
 #include "input.pio.h"
 
 // If this is active, then an overclock will be applied
-#define OVERCLOCK
+// #define OVERCLOCK
 
 // Delay startup by so many seconds
 #define START_DELAY 3
@@ -52,7 +52,7 @@ static void __time_critical_func(dma_handler)() {
     // pio_sm_clear_fifos(pio1, 0);
     // // pio_sm_exec(pio1, 0, pio_encode_wait_gpio(0, 5));
     // pio_sm_set_enabled(pio1, 0, true);
-    printf("0x%04X\n", capture_buf[0]);
+    printf("0x%X\n", (capture_buf[0]>>2) & 0xFF);
     // printf("%04X\n", *(capture_buf + sizeof(uint16_t)));
 
     dma_channel_set_write_addr(DMA_CHAN, capture_buf, true);
@@ -100,7 +100,16 @@ void init_input() {
     pio_sm_set_enabled(pio, sm, true);
 }
 
+static unsigned char lookup[16] = {
+0x0, 0x8, 0x4, 0xc, 0x2, 0xa, 0x6, 0xe,
+0x1, 0x9, 0x5, 0xd, 0x3, 0xb, 0x7, 0xf, };
 
+uint8_t reverse(uint8_t n) {
+   // Reverse the top and bottom nibble then swap them.
+   return (lookup[n & 0xF] << 4) | lookup[n>>4];
+}
+
+char buffer[33];
 
 int main() {
 #ifdef OVERCLOCK
@@ -142,9 +151,10 @@ int main() {
     while(running) {
         if (pio_sm_is_rx_fifo_empty(pio, sm) == false) {
         //     // Get data from 6502
+        
             uint32_t val = pio_sm_get(pio, sm);
-            
-            printf("%08X\n", val >> 6);
+            uint8_t t = ((val) >> 4);
+            printf("%02X\n", reverse(t));
         }
     }
 

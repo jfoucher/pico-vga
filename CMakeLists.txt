@@ -7,6 +7,7 @@ project(picovga C CXX ASM)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
+
 set(PICO_SDK_PATH $ENV{PICO_SDK_PATH})
 
 add_compile_options(-Wall
@@ -23,6 +24,8 @@ pico_sdk_init()
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
+add_subdirectory(scanvideo)
+
 add_executable(picovga
     main.c
 )
@@ -36,10 +39,12 @@ target_link_libraries(picovga
     hardware_pio
     hardware_dma
     hardware_irq
+    scanvideo
 )
 
 pico_set_program_name(picovga "picovga")
 pico_set_program_version(picovga "0.0.2")
+
 
 # generate PIO headers
 pico_generate_pio_header(picovga ${CMAKE_CURRENT_LIST_DIR}/input.pio)
@@ -54,3 +59,4 @@ pico_enable_stdio_uart(picovga 0)
 
 # create map/bin/hex/uf2 file etc.
 pico_add_extra_outputs(picovga)
+#pico_set_binary_type(picovga no_flash)

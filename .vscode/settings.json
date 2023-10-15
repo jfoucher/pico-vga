@@ -3,6 +3,12 @@
                 "*.c": "c",
                 "clocks.h": "c",
                 "dma.h": "c",
-                "stdlib.h": "c"
+                "stdlib.h": "c",
+                "multicore.h": "c",
+                "composable_scanline.h": "c",
+                "vreg.h": "c",
+                "input.pio.h": "c",
+                "scanvideo.h": "c",
+                "string.h": "c"
         }
 }

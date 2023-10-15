@@ -54,12 +54,12 @@ static inline uint bits_packed_per_word(uint pin_count) {
 }
 void input_program_init(PIO pio, uint sm, uint offset, uint pin) {
         pio_gpio_init(pio, pin);
-        pio_sm_set_consecutive_pindirs(pio, sm, pin, 16, false);
-        pio_sm_set_consecutive_pindirs(pio, sm, 27, 1, false);
+        pio_sm_set_consecutive_pindirs(pio, sm, pin, 14, false);
+        pio_sm_set_consecutive_pindirs(pio, sm, 22, 1, false);
         pio_sm_config c = input_program_get_default_config(offset);
         // sm_config_set_in_pins(&c, 27);
         // sm_config_set_out_pins(&c, pin, 14);
-        sm_config_set_jmp_pin(&c, 27);
+        sm_config_set_jmp_pin(&c, 22);
         sm_config_set_in_shift(&c, true, true, 32);
         // sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_RX);
 

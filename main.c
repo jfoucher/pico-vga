@@ -76,9 +76,9 @@ void video_init(uint8_t* buf) {
     multiplier = vga_mode.width / DISPLAY_WIDTH;
 }
 
-static void __time_critical_func(input_received)() {
-    printf(".");
-}
+// static void __time_critical_func(input_received)() {
+//     printf(".");
+// }
 
 // static void __time_critical_func(dma_handler)() {
 //     dma_hw->ints0 = 1u << DMA_CHAN;
@@ -211,9 +211,11 @@ int main() {
             // Get data from 6502
         
             uint32_t val = pio_sm_get(pio, sm);
-            uint8_t reg = lookup[val & 0xF];
-            uint8_t data = reverse((val) >> 4);
+            uint8_t reg = lookup[(val>>16) & 0xF];
+            uint8_t data = reverse((val >> 20) & 0xFF);
+            //printf("%02X ", data);
             if (reg == VIDEO_DATA) {
+                
                 pxbuf[write_address] = data;
                 write_address++;
                 if (write_address > DISPLAY_HEIGHT * DISPLAY_WIDTH) {

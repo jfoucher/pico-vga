@@ -73,6 +73,8 @@ uint8_t mode = MODE_PIXEL;
 PIO pio;
 uint sm;
 uint write_address=0;
+uint8_t fg_color = 0xFF;
+uint8_t bg_color = 0;
 
 void video_init(uint8_t* buf) {
     px_buf = buf;
@@ -218,9 +220,20 @@ int main() {
             if (reg == VIDEO_CTRL) {
                 mode = data & 1;
                 increment = ((int8_t) data) >> 2;
+            } else if (reg == VIDEO_ADDR_LOW) {
+                write_address = (write_address & 0xFFE0) | (data & 0x1F);
+            } else if (reg == VIDEO_ADDR_HIGH) {
+                write_address = (write_address & 0x00FF) | (data << 5);
             } else if (reg == VIDEO_DATA) {
-                pxbuf[write_address] = data;
-                write_address += 1;
+                if (mode == MODE_CHAR && write_address == 0x1FFE) {
+                    bg_color = reverse(data);
+                } else if (mode == MODE_CHAR && write_address == 0x1FFF) {
+                    fg_color = reverse(data);
+                } else {
+                    pxbuf[write_address] = data;
+                }
+                
+                write_address += increment;
                 uint l = mode == MODE_CHAR ? BUF_LENGTH_CHAR_MODE : BUF_LENGTH_PIXEL_MODE;
                 if (write_address > l) {
                     write_address = 0;
@@ -268,7 +281,7 @@ void __time_critical_func(draw_color_bar)(scanvideo_scanline_buffer_t *buffer) {
             //printf(" %02X", char_line_data);
             uint8_t p = px & 0x7;
             uint8_t b = (char_line_data) & (1 << p);
-            color = b ? 0x13 : 0;
+            color = b ? fg_color : bg_color;
         }
         
         if (color == old_color) {

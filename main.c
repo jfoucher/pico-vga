@@ -20,6 +20,7 @@
 #define vga_mode vga_mode_320x240_60
 #define PICO_SCANVIDEO_SCANLINE_BUFFER_COUNT 64
 #define INPUT_PIN_BASE 0
+#define RW_PIN 22
 // #define DMA_CHAN 0
 #define PICO_SCANVIDEO_COLOR_PIN_BASE 14
 #define PICO_SCANVIDEO_SYNC_PIN_BASE 26
@@ -34,8 +35,8 @@
 #define VIDEO_HSCROLL = (VIDEO_BASE + 6)
 #define VIDEO_VSCROLL = (VIDEO_BASE + 7)
 
-#define MODE_CHAR 0
-#define MODE_PIXEL 1
+#define MODE_CHAR 1
+#define MODE_PIXEL 0
 
 #include "scanvideo.h"
 #include "composable_scanline.h"
@@ -49,6 +50,8 @@
 #define START_DELAY 3
 #define DISPLAY_WIDTH 320
 #define DISPLAY_HEIGHT 240
+#define BUF_LENGTH_PIXEL_MODE  (DISPLAY_WIDTH * DISPLAY_HEIGHT)
+#define BUF_LENGTH_CHAR_MODE  ((DISPLAY_WIDTH / 8) * (DISPLAY_HEIGHT / 8))
 
 absolute_time_t start;
 
@@ -93,13 +96,9 @@ void video_init(uint8_t* buf) {
 // }
 
 void init_input() {
-    // gpio_init(5);
-    // gpio_pull_up(5);
-    // gpio_set_dir(5, 0);
-    // gpio_init(4);
-    // gpio_set_dir(3, 0);
-    // gpio_init(2);
-    // gpio_set_dir(2, 0);
+    gpio_init(RW_PIN);
+    gpio_pull_down(RW_PIN);
+    gpio_set_dir(RW_PIN, 0);
 
     uint offset = pio_add_program(pio, &input_program);
     input_program_init(pio, sm, offset, INPUT_PIN_BASE);
@@ -142,6 +141,7 @@ uint8_t reverse(uint8_t n) {
 }
 
 char buffer[33];
+uint increment = 1;
 
 int main() {
 
@@ -206,22 +206,27 @@ int main() {
 
     //dma_handler();
 
+
     while(running) {
         if (pio_sm_is_rx_fifo_empty(pio, sm) == false) {
             // Get data from 6502
-        
+
             uint32_t val = pio_sm_get(pio, sm);
-            uint8_t reg = lookup[(val>>16) & 0xF];
-            uint8_t data = reverse((val >> 20) & 0xFF);
-            //printf("%02X ", data);
-            if (reg == VIDEO_DATA) {
-                
+            uint8_t reg = lookup[(val) & 0xF];
+            uint8_t data = reverse((val >> 4) & 0xFF);
+            //printf("%02X ", reg);
+            if (reg == VIDEO_CTRL) {
+                mode = data & 1;
+                increment = ((int8_t) data) >> 2;
+            } else if (reg == VIDEO_DATA) {
                 pxbuf[write_address] = data;
-                write_address++;
-                if (write_address > DISPLAY_HEIGHT * DISPLAY_WIDTH) {
+                write_address += 1;
+                uint l = mode == MODE_CHAR ? BUF_LENGTH_CHAR_MODE : BUF_LENGTH_PIXEL_MODE;
+                if (write_address > l) {
                     write_address = 0;
                 }
             }
+        
         }
     }
 

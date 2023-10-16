@@ -2,24 +2,24 @@
 .define PHI2_PIN 13
 
 .program input
-
 .wrap_target
 idle:
     wait 1 pin CS_PIN       ; wait for CS to go high
     wait 0 pin CS_PIN       ; wait for CS to go low
                             ; TODO deglitch CS and add a bit of delay
-    jmp pin, read_cycle     ; if RW is high, its a read cycle
+    ;jmp pin, r [10]     ; if RW is high, its a read cycle
 
 write_cycle:
     in pins, 16             ; take a sample when the control signals are stable
     wait 1 pin PHI2_PIN     ; wait for PHI2 pin to go high
     ;
+    ;in pins, 16
     wait 0 pin PHI2_PIN     ; wait for PHI2 pin to go low
     in pins, 16             ; sample the write data just after the falling edge
                             ; auto-push now used
 
 read_cycle:
-        jmp idle
+    jmp idle
 .wrap                       ; and back to idle again
 
 ; .wrap_target
@@ -60,7 +60,7 @@ void input_program_init(PIO pio, uint sm, uint offset, uint pin) {
         // sm_config_set_in_pins(&c, 27);
         // sm_config_set_out_pins(&c, pin, 14);
         sm_config_set_jmp_pin(&c, 22);
-        sm_config_set_in_shift(&c, true, true, 32);
+        sm_config_set_in_shift(&c, false, true, 32);
         // sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_RX);
 
         pio_sm_init(pio, sm, offset, &c);
